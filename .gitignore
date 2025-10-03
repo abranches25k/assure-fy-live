@@ -1,0 +1,17 @@
+# ARQUIVO: .gitignore
+
+# Python Environments
+.venv
+venv/
+__pycache__/
+
+# Local Database and File Storage
+instance/
+saas.db
+uploads/
+logos/
+
+# Python compiled files
+*.pyc
+*.o
+*.pyd

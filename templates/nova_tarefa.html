@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <title>Nova Tarefa de Relatório</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="icon" type="image/png" href="{{ url_for('static', filename='img/favicon.png') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <style>
+        .container { max-width: 800px; }
+        .tab-content > div { border: 1px solid #ccc; padding: 15px; border-radius: 5px; opacity: 0.5; transition: opacity 0.3s; }
+        .tab-content > div.active { opacity: 1; }
+        .card-header { background-color: #007bff !important; }
+        .nav-link.active { font-weight: bold; }
+        .bg-light-subtle { background-color: #f7f7f7; }
+    </style>
+</head>
+<body>
+    <div class="container mt-5">
+        <div class="row justify-content-center">
+            <div class="col-md-12">
+                <div class="card shadow">
+                    <div class="card-header bg-primary text-white">
+                        <h1 class="h5 mb-0">Configurar Nova Tarefa - Análise de Inteligência</h1>
+                    </div>
+                    <div class="card-body">
+                        
+                        <form method="POST" enctype="multipart/form-data" action="{{ url_for('nova_tarefa') }}">
+                            
+                            {% with messages = get_flashed_messages(with_categories=true) %}
+                                {% if messages %}
+                                    {% for category, message in messages %}
+                                    <div class="alert alert-{{ 'success' if category == 'message' else 'danger' }}" role="alert">
+                                        {{ message }}
+                                    </div>
+                                    {% endfor %}
+                                {% endif %}
+                            {% endwith %}
+
+                            <div class="mb-3">
+                                <label for="nome_cliente" class="form-label">1. Nome da Tarefa:</label>
+                                <input type="text" id="nome_cliente" name="nome_cliente" class="form-control" placeholder="Ex: Batimento Diário de Carga" required>
+                            </div>
+
+                            <div class="mb-3">
+                                <label for="filtro_tipo" class="form-label">2. Tipo de Relatório:</label>
+                                <select id="filtro_tipo" name="filtro_tipo" class="form-select" required onchange="toggleFields()">
+                                    <option value="" disabled selected>-- Escolha o Tipo de Alerta/Relatório --</option>
+                                    <option value="DATA">Alerta por DATA (Prazo Crítico)</option>
+                                    <option value="STATUS">Alerta por STATUS (Palavra-Chave)</option>
+                                    <option value="FUNIL">Análise de FUNIL/Batimento de Carga (Vendas/Cobrança)</option>
+                                </select>
+                            </div>
+
+                            <div class="tab-content" id="tab-content">
+
+                                <div id="data_fields" class="tab-pane fade" style="border-color: #007bff !important;">
+                                    <h6 class="text-primary">REGRA: PRAZO CRÍTICO (DATA)</h6>
+                                    <div class="mb-3">
+                                        <label for="coluna_data" class="form-label">Coluna da Data de Vencimento:</label>
+                                        <input type="number" id="coluna_data" name="coluna_data" class="form-control" placeholder="Ex: 4 para Coluna D">
+                                        <div class="form-text">Coluna A é o 1, B é o 2, etc.</div>
+                                    </div>
+                                    <div class="mb-3">
+                                        <label for="dias_alerta" class="form-label">Prazo Crítico (em dias):</label>
+                                        <input type="number" id="dias_alerta" name="dias_alerta" class="form-control" placeholder="Ex: 7">
+                                    </div>
+                                </div>
+                                
+                                <div id="status_fields" class="tab-pane fade" style="border-color: #28a745 !important;">
+                                    <h6 class="text-success">REGRA: STATUS/TEXTO</h6>
+                                    <div class="mb-3">
+                                        <label for="coluna_status" class="form-label">Coluna do Status/Palavra-Chave:</label>
+                                        <input type="number" id="coluna_status" name="coluna_status" class="form-control" placeholder="Ex: 2 para Coluna B">
+                                    </div>
+                                    <div class="mb-3">
+                                        <label for="palavra_chave" class="form-label">Palavra Exata a ser Encontrada:</label>
+                                        <input type="text" id="palavra_chave" name="palavra_chave" class="form-control" placeholder="Ex: PAGO ou PERDIDO">
+                                    </div>
+                                </div>
+
+                                <div id="funil_fields" class="tab-pane fade" style="border-color: #dc3545 !important;">
+                                    <h6 class="text-danger">ANÁLISE DE FUNIL & BI (Preencha as Colunas)</h6>
+                                    
+                                    <div class="row">
+                                        <h6 class="text-muted small">Métricas de Performance do Funil (CPC, Acordos, Pagamentos)</h6>
+                                        <div class="col-md-4 mb-3">
+                                            <label for="coluna_base" class="form-label">Col. BASE TOTAL:</label>
+                                            <input type="number" id="coluna_base" name="coluna_base" class="form-control" placeholder="Ex: 2 (ID/Cliente)">
+                                        </div>
+                                        <div class="col-md-4 mb-3">
+                                            <label for="coluna_acionado" class="form-label">Col. ACIONADO:</label>
+                                            <input type="number" id="coluna_acionado" name="coluna_acionado" class="form-control" placeholder="Ex: 3">
+                                        </div>
+                                        <div class="col-md-4 mb-3">
+                                            <label for="coluna_atendido" class="form-label">Col. ATENDIDO (Alô):</label>
+                                            <input type="number" id="coluna_atendido" name="coluna_atendido" class="form-control" placeholder="Ex: 4">
+                                        </div>
+                                        <div class="col-md-4 mb-3">
+                                            <label for="coluna_cpc" class="form-label">Col. CPC:</label>
+                                            <input type="number" id="coluna_cpc" name="coluna_cpc" class="form-control" placeholder="Ex: 5">
+                                        </div>
+                                        <div class="col-md-4 mb-3">
+                                            <label for="coluna_acordos" class="form-label">Col. ACORDOS:</label>
+                                            <input type="number" id="coluna_acordos" name="coluna_acordos" class="form-control" placeholder="Ex: 6">
+                                        </div>
+                                        <div class="col-md-4 mb-3">
+                                            <label for="coluna_pagamentos" class="form-label">Col. PAGAMENTOS:</label>
+                                            <input type="number" id="coluna_pagamentos" name="coluna_pagamentos" class="form-control" placeholder="Ex: 7">
+                                        </div>
+                                    </div>
+                                    <hr>
+                                    <h6 class="text-secondary">Métricas de Valor (BI Histórico)</h6>
+                                    <div class="row">
+                                        <div class="col-md-6 mb-3">
+                                            <label for="coluna_valor" class="form-label">Col. Valor Financeiro (R$):</label>
+                                            <input type="number" id="coluna_valor" name="coluna_valor" class="form-control" placeholder="Ex: 8">
+                                        </div>
+                                        <div class="col-md-6 mb-3">
+                                            <label for="coluna_id_unico" class="form-label">Col. ID Único (Contrato):</label>
+                                            <input type="number" id="coluna_id_unico" name="coluna_id_unico" class="form-control" placeholder="Ex: 1">
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="mb-3 border p-3 rounded bg-light-subtle">
+                                <h6 class="text-info">Notificação PREMIUM (Telegram ID):</h6>
+                                <input type="text" id="telegram_chat_id" name="telegram_chat_id" class="form-control" placeholder="Opcional: ID do Chat/Canal (Ex: -12345678)">
+                            </div>
+                            
+                            <div class="mb-3 mt-4">
+                                <label for="arquivo_excel" class="form-label">3. Arquivo Excel (.xlsx):</label>
+                                <input type="file" id="arquivo_excel" name="arquivo_excel" class="form-control" accept=".xlsx" required>
+                                <div class="form-text text-danger fw-bold">⚠️ IMPORTANTE: Você deve reanexar o arquivo após qualquer erro de envio.</div>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label for="hora_agendamento" class="form-label">4. Hora do Processamento Diário (HH:MM):</label>
+                                <input type="time" id="hora_agendamento" name="hora_agendamento" class="form-control" value="09:00" required>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label for="email_destino" class="form-label">5. E-mail para Envio do Relatório:</label>
+                                <input type="email" id="email_destino" name="email_destino" class="form-control" required>
+                            </div>
+                            
+                            <div class="d-grid gap-2">
+                                <button type="submit" class="btn btn-success">Agendar e Salvar Tarefa</button>
+                                <a href="{{ url_for('lista_tarefas') }}" class="btn btn-outline-secondary">← Voltar</a>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Garante que o script rode após o carregamento da página
+            toggleFields(); 
+        });
+
+        function toggleFields() {
+            var tipo = document.getElementById('filtro_tipo').value;
+            var data = document.getElementById('data_fields');
+            var status = document.getElementById('status_fields');
+            var funil = document.getElementById('funil_fields');
+
+            // Reseta todas as abas (oculta)
+            [data, status, funil].forEach(el => {
+                el.classList.remove('active', 'show');
+                el.style.opacity = 0.5;
+                el.style.display = 'none'; // Novo: Esconde de forma mais eficaz
+            });
+
+            // Ativa e mostra a aba correta
+            if (tipo === 'DATA') {
+                 data.classList.add('active', 'show');
+                 data.style.opacity = 1;
+                 data.style.display = 'block';
+            } else if (tipo === 'STATUS') {
+                 status.classList.add('active', 'show');
+                 status.style.opacity = 1;
+                 status.style.display = 'block';
+            } else if (tipo === 'FUNIL') {
+                 funil.classList.add('active', 'show');
+                 funil.style.opacity = 1;
+                 funil.style.display = 'block';
+            }
+        }
+    </script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

@@ -1,0 +1,9 @@
+Flask
+Flask-SQLAlchemy
+python-dotenv
+Werkzeug
+APScheduler
+requests
+Flask-Login
+openpyxl
+reportlab

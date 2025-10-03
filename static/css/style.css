@@ -1,0 +1,32 @@
+/* ARQUIVO: static/css/style.css */
+
+/* Estilo Básico */
+body {
+    font-family: Arial, sans-serif;
+}
+
+/* Estilo para a barra de navegação principal */
+.navbar {
+    background-color: #007bff; /* Azul primário */
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+/* 🏆 NOVO: FORÇA O TAMANHO DA MARCA ESCRITA (ASSURE FY) */
+.navbar-brand {
+    font-size: 1.8rem !important; /* Aumenta o tamanho */
+    font-weight: 900; 
+    letter-spacing: 1px;
+    color: white !important; /* Garante que o texto fique branco */
+    display: flex;
+    align-items: center;
+}
+
+/* Corrige a cor dos links dentro da navbar para que sejam visíveis */
+.navbar-text a {
+    color: #f8f9fa !important; /* Cor clara para os botões/links de sair */
+}
+
+/* Garante que os logs fiquem visíveis */
+.log-icon { 
+    font-size: 0.8em !important; 
+}

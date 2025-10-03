@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <title>Dashboard - SaaS Relatórios</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+</head>
+<body>
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+        <div class="container-fluid">
+            <a class="navbar-brand" href="{{ url_for('dashboard') }}">SaaS Relatórios</a>
+            <div class="d-flex">
+                <span class="navbar-text me-3">
+                    Olá, **{{ session['username'] }}**
+                </span>
+                <a href="{{ url_for('logout') }}" class="btn btn-outline-danger">Sair</a>
+            </div>
+        </div>
+    </nav>
+    
+    <div class="container mt-4">
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                <div class="alert-messages">
+                    {% for category, message in messages %}
+                        <div class="alert alert-{{ category }}">{{ message }}</div>
+                    {% endfor %}
+                </div>
+            {% endif %}
+        {% endwith %}
+
+        <div class="row mb-4">
+            <div class="col-md-4">
+                <div class="card text-white bg-primary">
+                    <div class="card-body">
+                        <h5 class="card-title">Faturamento Total (Concluídas)</h5>
+                        <p class="card-text h1">R$ {{ "{:,.2f}".format(faturamento_total) }}</p>
+                    </div>
+                </div>
+            </div>
+            </div>
+
+        <h2>Minhas Tarefas</h2>
+        <a href="{{ url_for('nova_tarefa') }}" class="btn btn-success mb-3">
+            <i class="fas fa-plus"></i> Nova Tarefa
+        </a>
+
+        <div class="table-responsive">
+            <table class="table table-striped table-hover">
+                <thead>
+                    <tr>
+                        <th>Nome</th>
+                        <th>Data Limite</th>
+                        <th>Valor Faturamento</th>
+                        <th>Status</th>
+                        <th>Ações</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for tarefa in tarefas %}
+                    <tr>
+                        <td>{{ tarefa.nome }}</td>
+                        <td>{{ tarefa.data_limite }}</td>
+                        <td>R$ {{ "{:,.2f}".format(tarefa.valor_faturamento) }}</td>
+                        <td><span class="badge {% if tarefa.status == 'Concluída' %}bg-success{% elif tarefa.status == 'Em Risco' %}bg-danger{% else %}bg-warning text-dark{% endif %}">{{ tarefa.status }}</span></td>
+                        <td>
+                            <a href="{{ url_for('editar_tarefa', tarefa_id=tarefa.id) }}" class="btn btn-sm btn-info">Editar</a>
+                            <form method="POST" action="{{ url_for('deletar_tarefa', tarefa_id=tarefa.id) }}" style="display:inline;" onsubmit="return confirm('Tem certeza que deseja deletar esta tarefa?');">
+                                <button type="submit" class="btn btn-sm btn-danger">Deletar</button>
+                            </form>
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="5">Nenhuma tarefa encontrada.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://kit.fontawesome.com/SEU_KIT_FONT_AWESOME.js" crossorigin="anonymous"></script> 
+</body>
+</html>
