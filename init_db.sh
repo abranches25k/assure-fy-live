@@ -1,7 +1,4 @@
 #!/usr/bin/env bash
 
-# 1. Roda o comando Python para criar as tabelas de forma básica e robusta
-python -c 'from app import db; db.create_all()'
-
-# 2. Inicia o servidor Gunicorn (este comando é o que fica rodando)
+# Este script agora apenas inicia o servidor Gunicorn (o db.create_all está no app.py)
 gunicorn app:app

@@ -580,6 +580,7 @@ def lista_tarefas():
     return render_template('lista.html', tarefas=tarefas, job_info=job_info, log_history=log_history, user_logo_path=user_logo_path)
 
 @app.route('/nova', methods=['GET', 'POST'])
+@login_required 
 def nova_tarefa():
     if request.method == 'POST':
         if Tarefa.query.filter_by(user_id=current_user.id).count() >= current_user.limite_tarefas:
@@ -804,7 +805,7 @@ def deletar_tarefa(tarefa_id):
     return redirect(url_for('lista_tarefas'))
 
 
-# --- INICIALIZAÇÃO DA APLICAÇÃO (MANTIDA) ---
+# --- INICIALIZAÇÃO DA APLICAÇÃO ---
 scheduler = BackgroundScheduler()
 scheduler.start()
 atexit.register(lambda: scheduler.shutdown())
@@ -816,7 +817,8 @@ if __name__ == '__main__':
         if not os.path.exists(app.config['UPLOAD_FOLDER']):
             os.makedirs(app.config['UPLOAD_FOLDER'])
             
-        # O db.create_all() FOI REMOVIDO DAQUI E AGORA ESTÁ NO init_db.sh
+        # V40.4: db.create_all() movido de volta para o bloco principal de inicialização
+        db.create_all() 
         
         for tarefa in Tarefa.query.all():
             agendar_tarefa_core(tarefa.id, tarefa.hora_agendamento)
