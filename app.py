@@ -3,7 +3,7 @@ from flask import Flask, render_template, request, redirect, url_for, flash
 from flask_sqlalchemy import SQLAlchemy
 from apscheduler.schedulers.background import BackgroundScheduler
 from datetime import datetime, timedelta, date
-import os  # V34.0: Importar para usar variáveis de ambiente
+import os
 import atexit
 import requests 
 from werkzeug.utils import secure_filename
@@ -17,10 +17,18 @@ from email.message import EmailMessage
 
 # --- CONFIGURAÇÃO INICIAL DO FLASK ---
 app = Flask(__name__)
-app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///saas.db'
+
+# V40.0: Configuração final do caminho do banco de dados (usa /tmp no Render)
+db_path = os.environ.get("DATABASE_URL", "sqlite:///saas.db")
+# Se estivermos no Render, forçamos o DB para /tmp/saas.db por questões de permissão
+if os.environ.get('RENDER', '') == 'true':
+    db_path = "sqlite:////tmp/saas.db"
+    
+app.config['SQLALCHEMY_DATABASE_URI'] = db_path
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.config['UPLOAD_FOLDER'] = 'uploads'
 app.config['LOGO_FOLDER'] = 'logos'
+
 # V34.0: Usar variável de ambiente (SECRET_KEY)
 app.config['SECRET_KEY'] = os.environ.get("SECRET_KEY", "SUA_CHAVE_SECRETA_MUITO_LONGA_E_COMPLEXA") 
 app.secret_key = app.config['SECRET_KEY'] 
@@ -33,9 +41,8 @@ login_manager.init_app(app)
 login_manager.login_view = 'login' 
 
 # --- CONFIGURAÇÃO DE E-MAIL E TELEGRAM (COM VARIÁVEIS DE AMBIENTE) ---
-# V34.0: Usar variáveis de ambiente para deploy
 EMAIL_USER = os.environ.get("EMAIL_USER", "qualify.relatorios@gmail.com") 
-EMAIL_PASS = os.environ.get("EMAIL_PASS", "ukwmtfberzqafswj") # Sua Senha de App (ukwmtfberzqafswj)
+EMAIL_PASS = os.environ.get("EMAIL_PASS", "ukwmtfberzqafswj") 
 SMTP_SERVER = os.environ.get("SMTP_SERVER", "smtp.gmail.com")
 SMTP_PORT = int(os.environ.get("SMTP_PORT", 587))
 ADMIN_EMAIL = os.environ.get("ADMIN_EMAIL", "qualify.relatorios@gmail.com")
@@ -53,7 +60,6 @@ class Usuario(UserMixin, db.Model):
 
     tarefas = db.relationship('Tarefa', backref='owner', lazy='dynamic')
     logs = db.relationship('LogExecucao', backref='log_owner', lazy='dynamic')
-    # V32.0 CORREÇÃO: Renomeia o backref para garantir unicidade e evitar ArgumentError
     historico = db.relationship('HistoricoProducao', backref='hist_user_owner', lazy='dynamic') 
 
     def set_password(self, senha):
@@ -144,17 +150,15 @@ def enviar_email_com_anexo(destino, assunto, corpo, anexo_path):
         # V31.0: Usar conexão SMTP padrão (STARTTLS)
         with smtplib.SMTP(SMTP_SERVER, SMTP_PORT, timeout=5) as server:
             server.ehlo()
-            server.starttls() # Inicia criptografia STARTTLS
+            server.starttls() 
             server.login(EMAIL_USER, EMAIL_PASS.replace(' ', '')) 
             server.send_message(msg)
             
         return True
     except Exception as e:
-        # Captura o erro para ser usado no log do banco de dados
         smtp_error_message = f"SMTP ERROR: {type(e).__name__} - {str(e)[:150]}"
         print(f"\n\n🚨 ERRO SMTP CAPTURADO: {smtp_error_message}\n\n")
         
-        # Se o erro for capturado, a função retorna False. 
         return False
 
 def enviar_telegram(chat_id, mensagem):
@@ -182,10 +186,8 @@ def processar_e_enviar_relatorio(tarefa_id):
         user = Usuario.query.get(tarefa.user_id)
         if not user: return
 
-        # V20.0: BLOQUEIO DO MODO DE TESTE (TRIAL) E INCREMENTO DE EXECUÇÃO
         if user.limite_tarefas == 3:
             if user.executions_count >= 5:
-                # Log de Bloqueio
                 novo_log = LogExecucao(status="BLOQ", mensagem=f"Bloqueado: Limite de 5 execuções de testes gratuitos atingido.", tarefa_id=tarefa.id, user_id=user.id)
                 db.session.add(novo_log); db.session.commit()
                 return 
@@ -197,7 +199,7 @@ def processar_e_enviar_relatorio(tarefa_id):
         status = "SUCESSO"
         mensagem = ""
         workbook = None 
-        smtp_falhou = False # Flag para erro de SMTP
+        smtp_falhou = False 
 
         try:
             # 1. Leitura e Processamento (Lógica Mantida)
@@ -290,7 +292,6 @@ def processar_e_enviar_relatorio(tarefa_id):
                 ticket_medio_hoje = producao_total_hoje / num_itens_unicos if num_itens_unicos > 0 else 0.0
 
                 
-                # --- BUSCA HISTÓRICA ---
                 ontem = date.today() - timedelta(days=1)
                 historico_ontem = HistoricoProducao.query.filter_by(tarefa_id=tarefa.id, data_registro=ontem).first()
                 
@@ -332,13 +333,11 @@ def processar_e_enviar_relatorio(tarefa_id):
                 else:
                     dados_relatorio += "\n** PARABÉNS! Nenhum item encontrado pela regra. **\n"
 
-
-            # 4. Geração do PDF e Envio (Lógica mantida)
             email_success = enviar_email_com_anexo(tarefa.email_destino, f"Relatório ASSURE FY: {tarefa.nome_cliente}", dados_relatorio, pdf_caminho)
             telegram_success = enviar_telegram(tarefa.telegram_chat_id, f"🚨 ALERTA ASSURE FY: Relatório {tarefa.nome_cliente} executado.")
             
             if not email_success:
-                smtp_falhou = True # Seta a flag para registrar o erro no log
+                smtp_falhou = True 
             
         except Exception as e:
             status = "FALHA"
