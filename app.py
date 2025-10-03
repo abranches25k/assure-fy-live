@@ -580,7 +580,6 @@ def lista_tarefas():
     return render_template('lista.html', tarefas=tarefas, job_info=job_info, log_history=log_history, user_logo_path=user_logo_path)
 
 @app.route('/nova', methods=['GET', 'POST'])
-@login_required 
 def nova_tarefa():
     if request.method == 'POST':
         if Tarefa.query.filter_by(user_id=current_user.id).count() >= current_user.limite_tarefas:
@@ -817,7 +816,8 @@ if __name__ == '__main__':
         if not os.path.exists(app.config['UPLOAD_FOLDER']):
             os.makedirs(app.config['UPLOAD_FOLDER'])
             
-        db.create_all()
+        # O db.create_all() FOI REMOVIDO DAQUI E AGORA ESTÁ NO init_db.sh
+        
         for tarefa in Tarefa.query.all():
             agendar_tarefa_core(tarefa.id, tarefa.hora_agendamento)
             
